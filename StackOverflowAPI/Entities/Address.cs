@@ -10,6 +10,7 @@ namespace StackOverflowAPI.Entities
         public string Postcode { get; set; }
         public Guid AuthorId { get; set; }
 
+        [JsonIgnore]
         public Author Author { get; set; }
     }
 }
