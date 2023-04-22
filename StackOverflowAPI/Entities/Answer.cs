@@ -9,7 +9,7 @@ namespace StackOverflowAPI.Entities
 
         public Guid AuthorId { get; set; }
         public string Content { get; set; }
-        public int Rate { get; set; }
+        public int Rating { get; set; }
 
         public Question Question { get; set; }
 

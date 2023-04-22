@@ -98,7 +98,7 @@ app.MapPost("/createQuestion", async (StackOverflowDbContext db) =>
     {
         Author = authors[1],
         Content = "Try to change string to int",
-        Rate = 13,
+        Rating = 13,
         Comments = new List<Comment>() { comments[1] }
     };
 
