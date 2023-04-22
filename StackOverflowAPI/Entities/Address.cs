@@ -1,4 +1,6 @@
-﻿namespace StackOverflowAPI.Entities
+﻿using System.Text.Json.Serialization;
+
+namespace StackOverflowAPI.Entities
 {
     public class Address
     {
@@ -6,7 +8,10 @@
         public string Street { get; set; }
         public string City { get; set; }
         public string Postcode { get; set; }
+
+        [JsonIgnore]
         public Guid AuthorId { get; set; }
+
         public Author Author { get; set; }
     }
 }

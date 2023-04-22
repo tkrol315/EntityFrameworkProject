@@ -8,5 +8,6 @@
         public Address Address { get; set; }
         public List<Question> Questions { get; set; } = new List<Question>();
         public List<Answer> Answers { get; set; } = new List<Answer>();
+        public List<Comment> Comments { get; set; } = new List<Comment>();
     }
 }
