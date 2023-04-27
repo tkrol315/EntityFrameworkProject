@@ -11,6 +11,6 @@ namespace StackOverflowAPI.Entities
         public Guid AuthorId { get; set; }
 
         [JsonIgnore]
-        public Author Author { get; set; }
+        public User Author { get; set; }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using StackOverflowAPI.Migrations;
+using System.Text.Json.Serialization;
 
 namespace StackOverflowAPI.Entities
 {
@@ -7,7 +8,7 @@ namespace StackOverflowAPI.Entities
         public Guid Id { get; set; }
 
         [JsonIgnore]
-        public Author Author { get; set; }
+        public User Author { get; set; }
 
         public Guid AuthorId { get; set; }
         public string Content { get; set; }
@@ -18,5 +19,7 @@ namespace StackOverflowAPI.Entities
 
         public List<Answer> Answers { get; set; } = new List<Answer>();
         public List<Tag> Tags { get; set; } = new List<Tag>();
+
+        public Rating Rating { get; set; }
     }
 }

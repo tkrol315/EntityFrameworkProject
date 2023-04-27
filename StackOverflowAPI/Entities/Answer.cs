@@ -7,11 +7,10 @@ namespace StackOverflowAPI.Entities
         public Guid Id { get; set; }
 
         [JsonIgnore]
-        public Author Author { get; set; }
+        public User Author { get; set; }
 
         public Guid AuthorId { get; set; }
         public string Content { get; set; }
-        public int Rating { get; set; }
 
         [JsonIgnore]
         public Question Question { get; set; }
@@ -20,5 +19,7 @@ namespace StackOverflowAPI.Entities
 
         [JsonIgnore]
         public List<Comment> Comments { get; set; } = new List<Comment>();
+
+        public Rating Rating { get; set; }
     }
 }

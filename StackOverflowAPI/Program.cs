@@ -60,15 +60,15 @@ app.MapPost("/createQuestion", async (StackOverflowDbContext db) =>
           Postcode = "00-015"
       }
     };
-    var authors = new List<Author>
+    var authors = new List<User>
     {
-        new Author()
+        new User()
         {
             Name = "Jan",
             Surname = "Kowalski",
             Address = address[0]
         },
-        new Author() {
+        new User() {
             Name = "Adam",
             Surname = "Nowak",
             Address = address[1]
@@ -98,7 +98,6 @@ app.MapPost("/createQuestion", async (StackOverflowDbContext db) =>
     {
         Author = authors[1],
         Content = "Try to change string to int",
-        Rating = 13,
         Comments = new List<Comment>() { comments[1] }
     };
 
@@ -118,6 +117,17 @@ app.MapPost("/createQuestion", async (StackOverflowDbContext db) =>
     await db.Questions.AddAsync(question);
     await db.SaveChangesAsync();
     return question;
+});
+
+app.MapPost("/likeQuestion", async (StackOverflowDbContext db) =>
+{
+    //var userId =
+    //var user = db.Users.
+    //var authorId = "9761967B-F8C7-4631-54C0-08DB43415FEC";
+    //var question = db.Questions.Where(q => q.AuthorId == Guid.Parse(authorId)).FirstOrDefault();
+    //question.Rating++;
+    //await db.SaveChangesAsync();
+    //return question;
 });
 
 app.Run();
