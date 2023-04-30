@@ -15,8 +15,14 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<StackOverflowDbContext>(
     option => option.UseSqlServer(builder.Configuration.GetConnectionString("StackOverflowConnectionString")));
+//I don't know why but it doesn't work so I had to use [JsonIgnore]
+//=====================================
 //builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
-
+//builder.Services.Configure<JsonOptions>(option =>
+//{
+//    option.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+//});
+//=====================================
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -107,7 +113,7 @@ app.MapPost("/createQuestion", async (StackOverflowDbContext db) =>
         Content = @"Why my code doesn't work. It should print i?
                     for(let string i = 0;i<15;i++)
                     {
-                        ConsoleLog(i)
+                        console.log(i)
                     }",
         Comments = new List<Comment>() { comments[1] },
         Answers = new List<Answer>() { answer },
@@ -121,13 +127,51 @@ app.MapPost("/createQuestion", async (StackOverflowDbContext db) =>
 
 app.MapPost("/likeQuestion", async (StackOverflowDbContext db) =>
 {
-    //var userId =
-    //var user = db.Users.
-    //var authorId = "9761967B-F8C7-4631-54C0-08DB43415FEC";
-    //var question = db.Questions.Where(q => q.AuthorId == Guid.Parse(authorId)).FirstOrDefault();
-    //question.Rating++;
-    //await db.SaveChangesAsync();
-    //return question;
-});
+    var user = db.Users.Include(u => u.Ratings).First(u => u.Id == Guid.Parse("723B1E9F-FE9D-4A51-F193-08DB499E359A"));
+    var question = db.Questions.First(q => q.Id == Guid.Parse("E679A991-A2AE-4E00-B405-08DB499E3589"));
+    var userRating = question.Ratings.Where(r => r.UserId == user.Id).FirstOrDefault();
+    if (userRating == null || userRating.Value == 0 || userRating.Value == -1)
+    {
+        if (userRating == null)
+        {
+            userRating = new Rating { User = user, Value = 1 };
+            question.Ratings.Add(userRating);
+        }
+        else
+        {
+            userRating.Value = 1;
+        }
+        userRating.Value = 1;
+        question.RatingSum += 1;
+        await db.SaveChangesAsync();
+        return question;
+    }
+    return null;
+}
+);
+
+app.MapPost("/dislikeQuestion", async (StackOverflowDbContext db) =>
+{
+    var user = db.Users.Include(u => u.Ratings).First(u => u.Id == Guid.Parse("723B1E9F-FE9D-4A51-F193-08DB499E359A"));
+    var question = db.Questions.First(q => q.Id == Guid.Parse("E679A991-A2AE-4E00-B405-08DB499E3589"));
+    var userRating = question.Ratings.Where(r => r.UserId == user.Id).FirstOrDefault();
+    if (userRating == null || userRating.Value == 0 || userRating.Value == 1)
+    {
+        if (userRating == null)
+        {
+            userRating = new Rating { User = user, Value = -1 };
+            question.Ratings.Add(userRating);
+        }
+        else
+        {
+            userRating.Value = -1;
+        }
+        question.RatingSum -= 1;
+        await db.SaveChangesAsync();
+        return question;
+    }
+    return null;
+}
+);
 
 app.Run();

@@ -1,4 +1,5 @@
 ﻿using StackOverflowAPI.Migrations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
 namespace StackOverflowAPI.Entities
@@ -20,6 +21,9 @@ namespace StackOverflowAPI.Entities
         public List<Answer> Answers { get; set; } = new List<Answer>();
         public List<Tag> Tags { get; set; } = new List<Tag>();
 
-        public Rating Rating { get; set; }
+        [JsonIgnore]
+        public List<Rating> Ratings { get; set; } = new List<Rating>();
+
+        public int RatingSum { get; set; }
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace StackOverflowAPI.Entities
+﻿using System.Text.Json.Serialization;
+
+namespace StackOverflowAPI.Entities
 {
     public class User
     {
@@ -7,7 +9,9 @@
         public string Surname { get; set; }
         public Address Address { get; set; }
 
+        [JsonIgnore]
         public List<Rating> Ratings { get; set; } = new List<Rating>();
+
         public List<Question> Questions { get; set; } = new List<Question>();
         public List<Answer> Answers { get; set; } = new List<Answer>();
         public List<Comment> Comments { get; set; } = new List<Comment>();

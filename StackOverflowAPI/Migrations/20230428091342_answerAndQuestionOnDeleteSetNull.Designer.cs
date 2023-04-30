@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StackOverflowAPI.Entities;
 
@@ -11,9 +12,11 @@ using StackOverflowAPI.Entities;
 namespace StackOverflowAPI.Migrations
 {
     [DbContext(typeof(StackOverflowDbContext))]
-    partial class StackOverflowDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230428091342_answerAndQuestionOnDeleteSetNull")]
+    partial class answerAndQuestionOnDeleteSetNull
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -34,7 +37,7 @@ namespace StackOverflowAPI.Migrations
 
                     b.HasIndex("TagsId");
 
-                    b.ToTable("QuestionTag", (string)null);
+                    b.ToTable("QuestionTag");
                 });
 
             modelBuilder.Entity("StackOverflowAPI.Entities.Address", b =>
@@ -65,7 +68,7 @@ namespace StackOverflowAPI.Migrations
                     b.HasIndex("AuthorId")
                         .IsUnique();
 
-                    b.ToTable("Addresses", (string)null);
+                    b.ToTable("Addresses");
                 });
 
             modelBuilder.Entity("StackOverflowAPI.Entities.Answer", b =>
@@ -90,7 +93,7 @@ namespace StackOverflowAPI.Migrations
 
                     b.HasIndex("QuestionId");
 
-                    b.ToTable("Answers", (string)null);
+                    b.ToTable("Answers");
                 });
 
             modelBuilder.Entity("StackOverflowAPI.Entities.Comment", b =>
@@ -122,7 +125,7 @@ namespace StackOverflowAPI.Migrations
 
                     b.HasIndex("QuestionId");
 
-                    b.ToTable("Comments", (string)null);
+                    b.ToTable("Comments");
                 });
 
             modelBuilder.Entity("StackOverflowAPI.Entities.Question", b =>
@@ -141,15 +144,11 @@ namespace StackOverflowAPI.Migrations
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("RatingSum")
-                        .HasColumnType("int")
-                        .HasColumnName("RatingSum");
-
                     b.HasKey("Id");
 
                     b.HasIndex("AuthorId");
 
-                    b.ToTable("Questions", (string)null);
+                    b.ToTable("Questions");
                 });
 
             modelBuilder.Entity("StackOverflowAPI.Entities.Rating", b =>
@@ -178,11 +177,13 @@ namespace StackOverflowAPI.Migrations
                         .IsUnique()
                         .HasFilter("[AnswerId] IS NOT NULL");
 
-                    b.HasIndex("QuestionId");
+                    b.HasIndex("QuestionId")
+                        .IsUnique()
+                        .HasFilter("[QuestionId] IS NOT NULL");
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Ratings", (string)null);
+                    b.ToTable("Ratings");
                 });
 
             modelBuilder.Entity("StackOverflowAPI.Entities.Tag", b =>
@@ -199,7 +200,7 @@ namespace StackOverflowAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Tags", (string)null);
+                    b.ToTable("Tags");
 
                     b.HasData(
                         new
@@ -235,7 +236,7 @@ namespace StackOverflowAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("QuestionTag", b =>
@@ -329,8 +330,8 @@ namespace StackOverflowAPI.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("StackOverflowAPI.Entities.Question", "Question")
-                        .WithMany("Ratings")
-                        .HasForeignKey("QuestionId")
+                        .WithOne("Rating")
+                        .HasForeignKey("StackOverflowAPI.Entities.Rating", "QuestionId")
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("StackOverflowAPI.Entities.User", "User")
@@ -360,7 +361,8 @@ namespace StackOverflowAPI.Migrations
 
                     b.Navigation("Comments");
 
-                    b.Navigation("Ratings");
+                    b.Navigation("Rating")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("StackOverflowAPI.Entities.User", b =>

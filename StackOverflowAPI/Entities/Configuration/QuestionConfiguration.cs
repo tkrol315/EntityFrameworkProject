@@ -10,6 +10,7 @@ namespace StackOverflowAPI.Entities.Configuration
             builder.HasMany(q => q.Comments).WithOne(c => c.Question).HasForeignKey(c => c.QuestionId);
             builder.HasMany(q => q.Answers).WithOne(a => a.Question).HasForeignKey(a => a.QuestionId).OnDelete(DeleteBehavior.ClientCascade);
             builder.HasMany(q => q.Tags).WithMany(t => t.Questions);
+            builder.Property(q => q.RatingSum).HasColumnName("RatingSum");
         }
     }
 }
