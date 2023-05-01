@@ -124,54 +124,70 @@ app.MapPost("/createQuestion", async (StackOverflowDbContext db) =>
     await db.SaveChangesAsync();
     return question;
 });
-
 app.MapPost("/likeQuestion", async (StackOverflowDbContext db) =>
 {
-    var user = db.Users.Include(u => u.Ratings).First(u => u.Id == Guid.Parse("723B1E9F-FE9D-4A51-F193-08DB499E359A"));
-    var question = db.Questions.First(q => q.Id == Guid.Parse("E679A991-A2AE-4E00-B405-08DB499E3589"));
+    var user = db.Users.Include(u => u.Ratings).First(u => u.Id == Guid.Parse("06064D9F-D1E1-43F6-B2F2-08DB4A8EEA77"));
+    var question = db.Questions.First(q => q.Id == Guid.Parse("7A270758-AEFF-4FF8-A922-08DB4A8EEA64"));
     var userRating = question.Ratings.Where(r => r.UserId == user.Id).FirstOrDefault();
     if (userRating == null || userRating.Value == 0 || userRating.Value == -1)
     {
         if (userRating == null)
         {
-            userRating = new Rating { User = user, Value = 1 };
+            userRating = new Rating { User = user };
             question.Ratings.Add(userRating);
+            question.RatingSum += 1;
+        }
+        else if (userRating.Value == 0)
+        {
+            question.RatingSum += 1;
         }
         else
         {
-            userRating.Value = 1;
+            question.RatingSum += 2;
         }
         userRating.Value = 1;
-        question.RatingSum += 1;
+
         await db.SaveChangesAsync();
         return question;
     }
     return null;
 }
 );
-
 app.MapPost("/dislikeQuestion", async (StackOverflowDbContext db) =>
 {
-    var user = db.Users.Include(u => u.Ratings).First(u => u.Id == Guid.Parse("723B1E9F-FE9D-4A51-F193-08DB499E359A"));
-    var question = db.Questions.First(q => q.Id == Guid.Parse("E679A991-A2AE-4E00-B405-08DB499E3589"));
+    var user = db.Users.Include(u => u.Ratings).First(u => u.Id == Guid.Parse("06064D9F-D1E1-43F6-B2F2-08DB4A8EEA77"));
+    var question = db.Questions.First(q => q.Id == Guid.Parse("7A270758-AEFF-4FF8-A922-08DB4A8EEA64"));
     var userRating = question.Ratings.Where(r => r.UserId == user.Id).FirstOrDefault();
     if (userRating == null || userRating.Value == 0 || userRating.Value == 1)
     {
         if (userRating == null)
         {
-            userRating = new Rating { User = user, Value = -1 };
+            userRating = new Rating { User = user };
             question.Ratings.Add(userRating);
+            question.RatingSum -= 1;
+        }
+        else if (userRating.Value == 0)
+        {
+            question.RatingSum -= 1;
         }
         else
         {
-            userRating.Value = -1;
+            question.RatingSum -= 2;
         }
-        question.RatingSum -= 1;
+        userRating.Value = -1;
+
         await db.SaveChangesAsync();
         return question;
     }
     return null;
 }
 );
-
+app.MapPost("/undoRatings", async (StackOverflowDbContext db) =>
+{
+    var user = db.Users.Include(u => u.Ratings)
+    .First(u => u.Id == Guid.Parse("06064D9F-D1E1-43F6-B2F2-08DB4A8EEA77"));
+    var question = db.Questions
+    .First(q => q.Id == Guid.Parse("7A270758-AEFF-4FF8-A922-08DB4A8EEA64"));
+    var userRating = question.Ratings.Where(r => r.UserId == user.Id).FirstOrDefault();
+});
 app.Run();
