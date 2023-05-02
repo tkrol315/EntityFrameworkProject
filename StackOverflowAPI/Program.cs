@@ -40,6 +40,11 @@ if (pendingMigrations.Any())
 
 app.UseHttpsRedirection();
 
+Guid QuestionAuthorId = new Guid();
+Guid AnswerAuthorId = new Guid();
+Guid QuestionId = new Guid();
+Guid AnswerId = new Guid();
+
 app.MapPost("/Init", async (StackOverflowDbContext db) =>
 {
     var address = new List<Address>()
@@ -113,13 +118,17 @@ app.MapPost("/Init", async (StackOverflowDbContext db) =>
 
     await db.Questions.AddAsync(question);
     await db.SaveChangesAsync();
+    QuestionAuthorId = authors[0].Id;
+    AnswerAuthorId = authors[1].Id;
+    QuestionId = question.Id;
+    AnswerId = answer.Id;
     return question;
 });
 
 app.MapPost("/likeQuestion", async (StackOverflowDbContext db) =>
 {
-    var user = db.Users.Include(u => u.Ratings).FirstOrDefault(u => u.Id == Guid.Parse("3ED9E18E-A740-4624-2997-08DB4B366040"));
-    var question = db.Questions.FirstOrDefault(q => q.Id == Guid.Parse("3626F54E-CB32-4356-D7A0-08DB4B36602E"));
+    var user = db.Users.Include(u => u.Ratings).FirstOrDefault(u => u.Id == AnswerAuthorId);
+    var question = db.Questions.FirstOrDefault(q => q.Id == QuestionId);
     var userRating = user.Ratings.FirstOrDefault(r => r.Question.Id == question.Id);
     if (userRating == null || userRating.Value == 0 || userRating.Value == -1)
     {
@@ -147,8 +156,8 @@ app.MapPost("/likeQuestion", async (StackOverflowDbContext db) =>
 );
 app.MapPost("/dislikeQuestion", async (StackOverflowDbContext db) =>
 {
-    var user = db.Users.Include(u => u.Ratings).FirstOrDefault(u => u.Id == Guid.Parse("3ED9E18E-A740-4624-2997-08DB4B366040"));
-    var question = db.Questions.First(q => q.Id == Guid.Parse("3626F54E-CB32-4356-D7A0-08DB4B36602E"));
+    var user = db.Users.Include(u => u.Ratings).FirstOrDefault(u => u.Id == AnswerAuthorId);
+    var question = db.Questions.First(q => q.Id == QuestionId);
     var userRating = user.Ratings.FirstOrDefault(r => r.Question.Id == question.Id);
     if (userRating == null || userRating.Value == 0 || userRating.Value == 1)
     {
@@ -177,9 +186,9 @@ app.MapPost("/dislikeQuestion", async (StackOverflowDbContext db) =>
 app.MapPost("/undoQuestionRatings", async (StackOverflowDbContext db) =>
 {
     var user = db.Users.Include(u => u.Ratings)
-    .FirstOrDefault(u => u.Id == Guid.Parse("3ED9E18E-A740-4624-2997-08DB4B366040"));
+    .FirstOrDefault(u => u.Id == AnswerAuthorId);
     var question = db.Questions
-    .FirstOrDefault(q => q.Id == Guid.Parse("3626F54E-CB32-4356-D7A0-08DB4B36602E"));
+    .FirstOrDefault(q => q.Id == QuestionId);
     var userRating = user.Ratings.FirstOrDefault(r => r.Question.Id == question.Id);
     if (userRating != null && userRating.Value != 0)
     {
@@ -201,9 +210,9 @@ app.MapPost("/undoQuestionRatings", async (StackOverflowDbContext db) =>
 app.MapPost("/likeAnswer", async (StackOverflowDbContext db) =>
 {
     var user = db.Users.Include(u => u.Ratings)
-    .First(u => u.Id == Guid.Parse("CB79714D-783F-4376-31D9-08DB4B370382"));
+    .First(u => u.Id == QuestionAuthorId);
     var answer = db.Answers
-    .FirstOrDefault(a => a.Id == Guid.Parse("01D64D17-E4D7-42CE-CA59-08DB4B37037D"));
+    .FirstOrDefault(a => a.Id == AnswerId);
     var userRating = user.Ratings.FirstOrDefault(r => r.AnswerId == answer.Id);
     if (userRating == null || userRating.Value == 0 || userRating.Value == -1)
     {
@@ -232,9 +241,9 @@ app.MapPost("/likeAnswer", async (StackOverflowDbContext db) =>
 app.MapPost("/dislikeAnswer", async (StackOverflowDbContext db) =>
 {
     var user = db.Users.Include(u => u.Ratings)
-    .First(u => u.Id == Guid.Parse("CB79714D-783F-4376-31D9-08DB4B370382"));
+    .First(u => u.Id == QuestionAuthorId);
     var answer = db.Answers
-    .FirstOrDefault(a => a.Id == Guid.Parse("01D64D17-E4D7-42CE-CA59-08DB4B37037D"));
+    .FirstOrDefault(a => a.Id == AnswerId);
     var userRating = user.Ratings.FirstOrDefault(r => r.AnswerId == answer.Id);
     if (userRating == null || userRating.Value == 0 || userRating.Value == 1)
     {
@@ -263,9 +272,9 @@ app.MapPost("/dislikeAnswer", async (StackOverflowDbContext db) =>
 app.MapPost("/undoAnswerRating", async (StackOverflowDbContext db) =>
 {
     var user = db.Users.Include(u => u.Ratings)
-    .First(u => u.Id == Guid.Parse("CB79714D-783F-4376-31D9-08DB4B370382"));
+    .First(u => u.Id == QuestionAuthorId);
     var answer = db.Answers
-    .FirstOrDefault(a => a.Id == Guid.Parse("01D64D17-E4D7-42CE-CA59-08DB4B37037D"));
+    .FirstOrDefault(a => a.Id == AnswerId);
     var userRating = user.Ratings.FirstOrDefault(r => r.AnswerId == answer.Id);
     if (userRating != null && userRating.Value != 0)
     {
