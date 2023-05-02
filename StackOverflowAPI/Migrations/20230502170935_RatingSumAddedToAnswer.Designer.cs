@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StackOverflowAPI.Entities;
 
@@ -11,9 +12,11 @@ using StackOverflowAPI.Entities;
 namespace StackOverflowAPI.Migrations
 {
     [DbContext(typeof(StackOverflowDbContext))]
-    partial class StackOverflowDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230502170935_RatingSumAddedToAnswer")]
+    partial class RatingSumAddedToAnswer
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

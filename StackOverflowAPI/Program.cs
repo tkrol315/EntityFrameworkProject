@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Xml.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using StackOverflowAPI.Migrations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,18 +39,8 @@ if (pendingMigrations.Any())
     dbContext.Database.Migrate();
 
 app.UseHttpsRedirection();
-app.MapPost("/createTag", async (StackOverflowDbContext db) =>
-{
-    Tag tag = new Tag()
-    {
-        Name = "Python"
-    };
-    await db.Tags.AddAsync(tag);
-    await db.SaveChangesAsync();
 
-    return tag;
-});
-app.MapPost("/createQuestion", async (StackOverflowDbContext db) =>
+app.MapPost("/Init", async (StackOverflowDbContext db) =>
 {
     var address = new List<Address>()
     {
@@ -124,11 +115,12 @@ app.MapPost("/createQuestion", async (StackOverflowDbContext db) =>
     await db.SaveChangesAsync();
     return question;
 });
+
 app.MapPost("/likeQuestion", async (StackOverflowDbContext db) =>
 {
-    var user = db.Users.Include(u => u.Ratings).First(u => u.Id == Guid.Parse("06064D9F-D1E1-43F6-B2F2-08DB4A8EEA77"));
-    var question = db.Questions.First(q => q.Id == Guid.Parse("7A270758-AEFF-4FF8-A922-08DB4A8EEA64"));
-    var userRating = question.Ratings.Where(r => r.UserId == user.Id).FirstOrDefault();
+    var user = db.Users.Include(u => u.Ratings).FirstOrDefault(u => u.Id == Guid.Parse("3ED9E18E-A740-4624-2997-08DB4B366040"));
+    var question = db.Questions.FirstOrDefault(q => q.Id == Guid.Parse("3626F54E-CB32-4356-D7A0-08DB4B36602E"));
+    var userRating = user.Ratings.FirstOrDefault(r => r.Question.Id == question.Id);
     if (userRating == null || userRating.Value == 0 || userRating.Value == -1)
     {
         if (userRating == null)
@@ -155,9 +147,9 @@ app.MapPost("/likeQuestion", async (StackOverflowDbContext db) =>
 );
 app.MapPost("/dislikeQuestion", async (StackOverflowDbContext db) =>
 {
-    var user = db.Users.Include(u => u.Ratings).First(u => u.Id == Guid.Parse("06064D9F-D1E1-43F6-B2F2-08DB4A8EEA77"));
-    var question = db.Questions.First(q => q.Id == Guid.Parse("7A270758-AEFF-4FF8-A922-08DB4A8EEA64"));
-    var userRating = question.Ratings.Where(r => r.UserId == user.Id).FirstOrDefault();
+    var user = db.Users.Include(u => u.Ratings).FirstOrDefault(u => u.Id == Guid.Parse("3ED9E18E-A740-4624-2997-08DB4B366040"));
+    var question = db.Questions.First(q => q.Id == Guid.Parse("3626F54E-CB32-4356-D7A0-08DB4B36602E"));
+    var userRating = user.Ratings.FirstOrDefault(r => r.Question.Id == question.Id);
     if (userRating == null || userRating.Value == 0 || userRating.Value == 1)
     {
         if (userRating == null)
@@ -182,12 +174,126 @@ app.MapPost("/dislikeQuestion", async (StackOverflowDbContext db) =>
     return null;
 }
 );
-app.MapPost("/undoRatings", async (StackOverflowDbContext db) =>
+app.MapPost("/undoQuestionRatings", async (StackOverflowDbContext db) =>
 {
     var user = db.Users.Include(u => u.Ratings)
-    .First(u => u.Id == Guid.Parse("06064D9F-D1E1-43F6-B2F2-08DB4A8EEA77"));
+    .FirstOrDefault(u => u.Id == Guid.Parse("3ED9E18E-A740-4624-2997-08DB4B366040"));
     var question = db.Questions
-    .First(q => q.Id == Guid.Parse("7A270758-AEFF-4FF8-A922-08DB4A8EEA64"));
-    var userRating = question.Ratings.Where(r => r.UserId == user.Id).FirstOrDefault();
+    .FirstOrDefault(q => q.Id == Guid.Parse("3626F54E-CB32-4356-D7A0-08DB4B36602E"));
+    var userRating = user.Ratings.FirstOrDefault(r => r.Question.Id == question.Id);
+    if (userRating != null && userRating.Value != 0)
+    {
+        if (userRating.Value == 1)
+        {
+            question.RatingSum -= 1;
+        }
+        else
+        {
+            question.RatingSum += 1;
+        }
+        userRating.Value = 0;
+        await db.SaveChangesAsync();
+        return question;
+    }
+    return null;
 });
+
+app.MapPost("/likeAnswer", async (StackOverflowDbContext db) =>
+{
+    var user = db.Users.Include(u => u.Ratings)
+    .First(u => u.Id == Guid.Parse("CB79714D-783F-4376-31D9-08DB4B370382"));
+    var answer = db.Answers
+    .FirstOrDefault(a => a.Id == Guid.Parse("01D64D17-E4D7-42CE-CA59-08DB4B37037D"));
+    var userRating = user.Ratings.FirstOrDefault(r => r.AnswerId == answer.Id);
+    if (userRating == null || userRating.Value == 0 || userRating.Value == -1)
+    {
+        if (userRating == null)
+        {
+            userRating = new Rating { User = user };
+            answer.Ratings.Add(userRating);
+            answer.RatingSum += 1;
+        }
+        else if (userRating.Value == 0)
+        {
+            answer.RatingSum += 1;
+        }
+        else
+        {
+            answer.RatingSum += 2;
+        }
+        userRating.Value = 1;
+
+        await db.SaveChangesAsync();
+        return answer;
+    }
+    return null;
+});
+
+app.MapPost("/dislikeAnswer", async (StackOverflowDbContext db) =>
+{
+    var user = db.Users.Include(u => u.Ratings)
+    .First(u => u.Id == Guid.Parse("CB79714D-783F-4376-31D9-08DB4B370382"));
+    var answer = db.Answers
+    .FirstOrDefault(a => a.Id == Guid.Parse("01D64D17-E4D7-42CE-CA59-08DB4B37037D"));
+    var userRating = user.Ratings.FirstOrDefault(r => r.AnswerId == answer.Id);
+    if (userRating == null || userRating.Value == 0 || userRating.Value == 1)
+    {
+        if (userRating == null)
+        {
+            userRating = new Rating { User = user };
+            answer.Ratings.Add(userRating);
+            answer.RatingSum -= 1;
+        }
+        else if (userRating.Value == 0)
+        {
+            answer.RatingSum -= 1;
+        }
+        else
+        {
+            answer.RatingSum -= 2;
+        }
+        userRating.Value = -1;
+
+        await db.SaveChangesAsync();
+        return answer;
+    }
+    return null;
+});
+
+app.MapPost("/undoAnswerRating", async (StackOverflowDbContext db) =>
+{
+    var user = db.Users.Include(u => u.Ratings)
+    .First(u => u.Id == Guid.Parse("CB79714D-783F-4376-31D9-08DB4B370382"));
+    var answer = db.Answers
+    .FirstOrDefault(a => a.Id == Guid.Parse("01D64D17-E4D7-42CE-CA59-08DB4B37037D"));
+    var userRating = user.Ratings.FirstOrDefault(r => r.AnswerId == answer.Id);
+    if (userRating != null && userRating.Value != 0)
+    {
+        if (userRating.Value == 1)
+        {
+            answer.RatingSum -= 1;
+        }
+        else
+        {
+            answer.RatingSum += 1;
+        }
+        userRating.Value = 0;
+        await db.SaveChangesAsync();
+        return answer;
+    }
+    return null;
+});
+
+app.MapPost("/createTag", async (StackOverflowDbContext db) =>
+{
+    Tag tag = new Tag()
+    {
+        Name = "Python"
+    };
+    await db.Tags.AddAsync(tag);
+    await db.SaveChangesAsync();
+
+    return tag;
+});
+
 app.Run();

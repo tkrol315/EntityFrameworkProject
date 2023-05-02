@@ -20,6 +20,9 @@ namespace StackOverflowAPI.Entities
         [JsonIgnore]
         public List<Comment> Comments { get; set; } = new List<Comment>();
 
-        public Rating Rating { get; set; }
+        [JsonIgnore]
+        public List<Rating> Ratings { get; set; } = new List<Rating>();
+
+        public int RatingSum { get; set; }
     }
 }
