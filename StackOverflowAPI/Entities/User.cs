@@ -14,6 +14,8 @@ namespace StackOverflowAPI.Entities
 
         public List<Question> Questions { get; set; } = new List<Question>();
         public List<Answer> Answers { get; set; } = new List<Answer>();
+
+        [JsonIgnore]
         public List<Comment> Comments { get; set; } = new List<Comment>();
     }
 }
