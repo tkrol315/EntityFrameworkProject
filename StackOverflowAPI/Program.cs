@@ -7,6 +7,8 @@ using System.Xml.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using StackOverflowAPI.Migrations;
+using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
+using StackOverflowAPI.Enums;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,12 +42,25 @@ if (pendingMigrations.Any())
 
 app.UseHttpsRedirection();
 
+Question sampleQuestion = dbContext.Questions.Include(q => q.Answers).FirstOrDefault();
 Guid QuestionAuthorId = new Guid();
 Guid AnswerAuthorId = new Guid();
-Guid QuestionId = new Guid();
 Guid AnswerId = new Guid();
+Guid QuestionId = new Guid();
+if (sampleQuestion == null)
+{
+    CreateSampleData(dbContext);
+}
+else
+{
+    QuestionId = sampleQuestion.Id;
+    QuestionAuthorId = sampleQuestion.AuthorId;
+    Answer sampleAnswer = sampleQuestion.Answers.FirstOrDefault();
+    AnswerId = sampleAnswer.Id;
+    AnswerAuthorId = sampleAnswer.AuthorId;
+}
 
-app.MapPost("/Init", async (StackOverflowDbContext db) =>
+async void CreateSampleData(StackOverflowDbContext db)
 {
     var address = new List<Address>()
     {
@@ -122,98 +137,84 @@ app.MapPost("/Init", async (StackOverflowDbContext db) =>
     AnswerAuthorId = authors[1].Id;
     QuestionId = question.Id;
     AnswerId = answer.Id;
-    return question;
-});
+};
 
-app.MapPost("/likeQuestion", async (StackOverflowDbContext db) =>
+app.MapPost("rateQuestion", async (StackOverflowDbContext db, RatingType ratingType) =>
 {
     var user = db.Users.Include(u => u.Ratings).FirstOrDefault(u => u.Id == AnswerAuthorId);
     var question = db.Questions.FirstOrDefault(q => q.Id == QuestionId);
     if (user == null || question == null)
         return null;
     var userRating = user.Ratings.FirstOrDefault(r => r.Question.Id == question.Id);
-    if (userRating == null || userRating.Value == 0 || userRating.Value == -1)
+    if (ratingType == RatingType.Like)
     {
-        if (userRating == null)
+        if (userRating == null || userRating.Value == 0 || userRating.Value == -1)
         {
-            userRating = new Rating { User = user };
-            question.Ratings.Add(userRating);
-            question.RatingSum += 1;
+            if (userRating == null)
+            {
+                userRating = new Rating { User = user };
+                question.Ratings.Add(userRating);
+                question.RatingSum += 1;
+            }
+            else if (userRating.Value == 0)
+            {
+                question.RatingSum += 1;
+            }
+            else
+            {
+                question.RatingSum += 2;
+            }
+            userRating.Value = 1;
         }
-        else if (userRating.Value == 0)
-        {
-            question.RatingSum += 1;
-        }
-        else
-        {
-            question.RatingSum += 2;
-        }
-        userRating.Value = 1;
-
-        await db.SaveChangesAsync();
-        return question;
+        else return null;
     }
-    return null;
-}
-);
-app.MapPost("/dislikeQuestion", async (StackOverflowDbContext db) =>
-{
-    var user = db.Users.Include(u => u.Ratings).FirstOrDefault(u => u.Id == AnswerAuthorId);
-    var question = db.Questions.First(q => q.Id == QuestionId);
-    var userRating = user.Ratings.FirstOrDefault(r => r.Question.Id == question.Id);
-    if (user == null || question == null)
+    else if (ratingType == RatingType.Dislike)
+    {
+        if (userRating == null || userRating.Value == 0 || userRating.Value == 1)
+        {
+            if (userRating == null)
+            {
+                userRating = new Rating { User = user };
+                question.Ratings.Add(userRating);
+                question.RatingSum -= 1;
+            }
+            else if (userRating.Value == 0)
+            {
+                question.RatingSum -= 1;
+            }
+            else
+            {
+                question.RatingSum -= 2;
+            }
+            userRating.Value = -1;
+        }
+        else return null;
+    }
+    else if (ratingType == RatingType.UndoRating)
+    {
+        if (userRating != null && userRating.Value != 0)
+        {
+            if (userRating.Value == 1)
+            {
+                question.RatingSum -= 1;
+            }
+            else
+            {
+                question.RatingSum += 1;
+            }
+            userRating.Value = 0;
+        }
+        else return null;
+    }
+    else
+    {
         return null;
-    if (userRating == null || userRating.Value == 0 || userRating.Value == 1)
-    {
-        if (userRating == null)
-        {
-            userRating = new Rating { User = user };
-            question.Ratings.Add(userRating);
-            question.RatingSum -= 1;
-        }
-        else if (userRating.Value == 0)
-        {
-            question.RatingSum -= 1;
-        }
-        else
-        {
-            question.RatingSum -= 2;
-        }
-        userRating.Value = -1;
-
-        await db.SaveChangesAsync();
-        return question;
     }
-    return null;
-}
-);
-app.MapPost("/undoQuestionRatings", async (StackOverflowDbContext db) =>
-{
-    var user = db.Users.Include(u => u.Ratings)
-    .FirstOrDefault(u => u.Id == AnswerAuthorId);
-    var question = db.Questions
-    .FirstOrDefault(q => q.Id == QuestionId);
-    if (user == null || question == null)
-        return null;
-    var userRating = user.Ratings.FirstOrDefault(r => r.Question.Id == question.Id);
-    if (userRating != null && userRating.Value != 0)
-    {
-        if (userRating.Value == 1)
-        {
-            question.RatingSum -= 1;
-        }
-        else
-        {
-            question.RatingSum += 1;
-        }
-        userRating.Value = 0;
-        await db.SaveChangesAsync();
-        return question;
-    }
-    return null;
+    await db.SaveChangesAsync();
+    return question;
 });
 
-app.MapPost("/likeAnswer", async (StackOverflowDbContext db) =>
+app.MapPost("/rateAnswer", async (StackOverflowDbContext db, RatingType ratingType) =>
 {
     var user = db.Users.Include(u => u.Ratings)
     .First(u => u.Id == QuestionAuthorId);
@@ -222,87 +223,70 @@ app.MapPost("/likeAnswer", async (StackOverflowDbContext db) =>
     if (user == null || answer == null)
         return null;
     var userRating = user.Ratings.FirstOrDefault(r => r.AnswerId == answer.Id);
-    if (userRating == null || userRating.Value == 0 || userRating.Value == -1)
+    if (ratingType == RatingType.Like)
     {
-        if (userRating == null)
+        if (userRating == null || userRating.Value == 0 || userRating.Value == -1)
         {
-            userRating = new Rating { User = user };
-            answer.Ratings.Add(userRating);
-            answer.RatingSum += 1;
+            if (userRating == null)
+            {
+                userRating = new Rating { User = user };
+                answer.Ratings.Add(userRating);
+                answer.RatingSum += 1;
+            }
+            else if (userRating.Value == 0)
+            {
+                answer.RatingSum += 1;
+            }
+            else
+            {
+                answer.RatingSum += 2;
+            }
+            userRating.Value = 1;
         }
-        else if (userRating.Value == 0)
-        {
-            answer.RatingSum += 1;
-        }
-        else
-        {
-            answer.RatingSum += 2;
-        }
-        userRating.Value = 1;
-
-        await db.SaveChangesAsync();
-        return answer;
+        else return null;
     }
-    return null;
-});
-
-app.MapPost("/dislikeAnswer", async (StackOverflowDbContext db) =>
-{
-    var user = db.Users.Include(u => u.Ratings)
-    .First(u => u.Id == QuestionAuthorId);
-    var answer = db.Answers
-    .FirstOrDefault(a => a.Id == AnswerId);
-    if (user == null || answer == null)
+    else if (ratingType == RatingType.Dislike)
+    {
+        if (userRating == null || userRating.Value == 0 || userRating.Value == 1)
+        {
+            if (userRating == null)
+            {
+                userRating = new Rating { User = user };
+                answer.Ratings.Add(userRating);
+                answer.RatingSum -= 1;
+            }
+            else if (userRating.Value == 0)
+            {
+                answer.RatingSum -= 1;
+            }
+            else
+            {
+                answer.RatingSum -= 2;
+            }
+            userRating.Value = -1;
+        }
+    }
+    else if (ratingType == RatingType.UndoRating)
+    {
+        if (userRating != null && userRating.Value != 0)
+        {
+            if (userRating.Value == 1)
+            {
+                answer.RatingSum -= 1;
+            }
+            else
+            {
+                answer.RatingSum += 1;
+            }
+            userRating.Value = 0;
+        }
+    }
+    else
+    {
         return null;
-    var userRating = user.Ratings.FirstOrDefault(r => r.AnswerId == answer.Id);
-    if (userRating == null || userRating.Value == 0 || userRating.Value == 1)
-    {
-        if (userRating == null)
-        {
-            userRating = new Rating { User = user };
-            answer.Ratings.Add(userRating);
-            answer.RatingSum -= 1;
-        }
-        else if (userRating.Value == 0)
-        {
-            answer.RatingSum -= 1;
-        }
-        else
-        {
-            answer.RatingSum -= 2;
-        }
-        userRating.Value = -1;
-
-        await db.SaveChangesAsync();
-        return answer;
     }
-    return null;
-});
-
-app.MapPost("/undoAnswerRating", async (StackOverflowDbContext db) =>
-{
-    var user = db.Users.Include(u => u.Ratings)
-    .First(u => u.Id == QuestionAuthorId);
-    var answer = db.Answers
-    .FirstOrDefault(a => a.Id == AnswerId);
-    if (user == null || answer == null)
-        return null;
-    var userRating = user.Ratings.FirstOrDefault(r => r.AnswerId == answer.Id);
-    if (userRating != null && userRating.Value != 0)
-    {
-        if (userRating.Value == 1)
-        {
-            answer.RatingSum -= 1;
-        }
-        else
-        {
-            answer.RatingSum += 1;
-        }
-        userRating.Value = 0;
-        await db.SaveChangesAsync();
-        return answer;
-    }
-    return null;
+    await db.SaveChangesAsync();
+    return answer;
 });
 
 app.MapPost("/addQuestionComment", async (StackOverflowDbContext db) =>
