@@ -1,13 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Writers;
 using StackOverflowAPI.Entities;
-using System.Text.Json.Serialization;
-using System.Text.Json;
-using System.Xml.Linq;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using StackOverflowAPI.Migrations;
-using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using StackOverflowAPI.Enums;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -42,6 +34,8 @@ if (pendingMigrations.Any())
 
 app.UseHttpsRedirection();
 
+//Init
+//====================================================================================
 Question sampleQuestion = dbContext.Questions.Include(q => q.Answers).FirstOrDefault();
 Guid QuestionAuthorId = new Guid();
 Guid AnswerAuthorId = new Guid();
@@ -94,7 +88,7 @@ async void CreateSampleData(StackOverflowDbContext db)
 
     var tag = new Tag()
     {
-        Name = "JavaScript"
+        Name = "C#"
     };
 
     var comments = new List<Comment>()
@@ -114,7 +108,7 @@ async void CreateSampleData(StackOverflowDbContext db)
     var answer = new Answer()
     {
         Author = authors[1],
-        Content = "Try to change string to int",
+        Content = "Try changing in to int",
         Comments = new List<Comment>() { comments[1] }
     };
 
@@ -122,10 +116,10 @@ async void CreateSampleData(StackOverflowDbContext db)
     {
         Author = authors[0],
         Content = @"Why my code doesn't work. It should print i?
-                    for(let string i = 0;i<15;i++)
-                    {
-                        console.log(i)
-                    }",
+                  for(in i = 0; i<10; i++)
+                  {
+                    Console.WriteLine(i);
+                  }",
         Comments = new List<Comment>() { comments[1] },
         Answers = new List<Answer>() { answer },
         Tags = new List<Tag>() { tag },
@@ -138,6 +132,8 @@ async void CreateSampleData(StackOverflowDbContext db)
     QuestionId = question.Id;
     AnswerId = answer.Id;
 };
+
+//====================================================================================
 
 app.MapPost("rateQuestion", async (StackOverflowDbContext db, RatingType ratingType) =>
 {
@@ -289,44 +285,46 @@ app.MapPost("/rateAnswer", async (StackOverflowDbContext db, RatingType ratingTy
     return answer;
 });
 
-app.MapPost("/addQuestionComment", async (StackOverflowDbContext db) =>
+app.MapPost("/addQuestionComment", async (StackOverflowDbContext db, string comment) =>
 {
-    var content = "Good question";
     var user = db.Users.FirstOrDefault(u => u.Id == AnswerAuthorId);
     var question = db.Questions.Include(q => q.Comments)
     .FirstOrDefault(q => q.Id == QuestionId);
     if (user == null || question == null)
         return null;
-    var newComment = new Comment { Author = user, Content = content };
+    var newComment = new Comment { Author = user, Content = comment };
     question.Comments.Add(newComment);
     await db.SaveChangesAsync();
     return newComment;
 });
 
-app.MapPost("/addAnswerComment", async (StackOverflowDbContext db) =>
+app.MapPost("/addAnswerComment", async (StackOverflowDbContext db, string comment) =>
 {
-    var content = "Good answer";
     var user = db.Users.FirstOrDefault(u => u.Id == QuestionAuthorId);
     var answer = db.Answers.Include(a => a.Comments)
     .FirstOrDefault(a => a.Id == AnswerId);
     if (user == null || answer == null)
         return null;
-    var newComment = new Comment { Author = user, Content = content };
+    var newComment = new Comment { Author = user, Content = comment };
     answer.Comments.Add(newComment);
     await db.SaveChangesAsync();
     return newComment;
 });
 
-app.MapPost("/createTag", async (StackOverflowDbContext db) =>
+app.MapPost("/createTag", async (StackOverflowDbContext db, string tagName) =>
 {
-    Tag tag = new Tag()
+    if (db.Tags.FirstOrDefault(t => t.Name == tagName) == null)
     {
-        Name = "Python"
-    };
-    await db.Tags.AddAsync(tag);
-    await db.SaveChangesAsync();
+        Tag tag = new Tag()
+        {
+            Name = tagName
+        };
+        await db.Tags.AddAsync(tag);
+        await db.SaveChangesAsync();
 
-    return tag;
+        return tag;
+    }
+    return null;
 });
 
 app.Run();
